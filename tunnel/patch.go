@@ -121,3 +121,16 @@ func ResolveRoute(metadata *C.Metadata) (C.Proxy, error) {
 	proxy, _, err := resolveMetadata(metadata)
 	return proxy, err
 }
+
+type routeMatcher func(*C.Metadata, C.RuleMatchHelper) (C.Proxy, C.Rule, error)
+
+// MatchRoute uses the live routing path without dialing the destination.
+func MatchRoute(metadata *C.Metadata) (C.Proxy, C.Rule, error) {
+	fixMetadata(metadata)
+	configMux.RLock()
+	defer configMux.RUnlock()
+	if err := preHandleMetadata(metadata); err != nil {
+		return nil, nil, err
+	}
+	return resolveMetadataWithMatcher(metadata, matchLocked)
+}
