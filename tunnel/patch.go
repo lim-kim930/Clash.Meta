@@ -110,3 +110,15 @@ func RuleProvidersSnapshot() map[string]P.RuleProvider {
 	defer configMux.RUnlock()
 	return ruleProviders
 }
+
+type routeMatcher func(*C.Metadata, C.RuleMatchHelper) (C.Proxy, C.Rule, error)
+
+// MatchRoute uses the live routing path without dialing the destination.
+func MatchRoute(metadata *C.Metadata) (C.Proxy, C.Rule, error) {
+	configMux.RLock()
+	defer configMux.RUnlock()
+	if err := preHandleMetadata(metadata); err != nil {
+		return nil, nil, err
+	}
+	return resolveMetadataWithMatcher(metadata, matchLocked)
+}
